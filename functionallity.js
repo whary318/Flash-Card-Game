@@ -57,11 +57,12 @@ function submitionHandler() {
 function nextPicture() {
     gameCounter++;
     updateCounter();
-    mainPicture = Math.floor(1 + Math.random() * (animalNames.length - 1));
-    setImage(mainPicture);
 
-    correctChoice = Math.floor(1 + Math.random() * 4);
+    mainPicture = Math.floor(Math.random() * (animalNames.length));
+    setImage(mainPicture);
+    correctChoice = Math.floor(Math.random() * 4);
     setChoices(correctChoice, mainPicture);
+    
     for(i = 0; i < 4; i++){
         var otherchoices = Math.floor(1 + Math.random() * (animalNames.length - 1));
         if(i != correctChoice){
