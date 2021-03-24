@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" type="text/css" href="FlashCard3.css" />
+  <title>FlashCards</title>
+</head>
+
+<body>
+  <h1 id="data_title">Flash Cards</h1>
+  <div>
+    <p id="url"></p>
+    <img id="picture" src="">
+  </div>
+  <div>
+    <button id="btn0" type="button">0</button>
+    <button id="btn1" type="button">1</button>
+    <button id="btn2" type="button">2</button>
+    <button id="btn3" type="button">3</button>
+  </div>
+  <div>
+    <button id="show" type="button" onclick="showAnswer()">Answer</button>
+    <span id="score">0</span>/<span id="outOf">0</span>
+    <button id="next" type="button" onclick="goNext()">Next</button>
+  </div>
+  <!-- Places to write stuff in innerHTML while debugging
+  <div id='debug1' class="debug">debug 1</div>
+  <div id="debug2" class="debug">debug 2</div>
+  <div id="debug3" class="debug">debug 3</div>
+-->
+
+  <script>
+    /* create a random order for going through the pictures */
+    var questionOrder = [];
+    /* index for going through the questionOrder list */
+    var placeInOrder = 0;
+    /* element with the correct answer */
+    var correctButton;
+    /* arrays for the correct answer, and ready-to-update counter */
+    var theQuestion;
+    var otherAnswers;
+    var replies = 0;
+    /* variables for keeping score */
+    var score = 0;
+    var outOf = 0;
+
+    /* populate an array with values in sequence - from 1 */
+    function populateSequence(arr, length) {
+      for (i = 1; i <= length; i++)
+        arr.push(i);
+    }
+
+    /* shuffle an array */
+    function shuffle(arr) {
+      for (i = 0; i < arr.length; i++) {
+        var j = Math.floor(Math.random() * arr.length);
+        var temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+      }
+    }
+
+    function updateQuestionNumber() {
+      placeInOrder++;
+      if (placeInOrder >= questionOrder.length) {
+        shuffle(questionOrder);
+        placeInOrder = 0;
+      }
+    }
+
+    function queryNumberOfQuestions() {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          var numberOfQuestions = parseInt(this.responseText);
+          populateSequence(questionOrder, numberOfQuestions);
+          shuffle(questionOrder);
+        }
+      };
+      xhttp.open("GET", "getQuestionCount.php", true);
+      xhttp.send();
+    }
+
+    function queryNextQuestion(questionNumber) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          theQuestion = this.responseText.split(',');
+          updateGame();
+        }
+      };
+      var url = "getQuestion.php?row=" + questionNumber.toString();
+      xhttp.open("GET", url, true);
+      xhttp.send();
+    }
+
+    function queryOtherAnswers(questionNumber) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          otherAnswers = this.responseText.split(',');
+          updateGame();
+        }
+      };
+      var url = "getOtherAnswers.php?row=" + questionNumber.toString();
+      xhttp.open("GET", url, true);
+      xhttp.send();
+    }
+
+    function goNext() {
+      replies = 0;
+      updateQuestionNumber();
+      nextQuestion = questionOrder[placeInOrder];
+      queryOtherAnswers(nextQuestion);
+      queryNextQuestion(nextQuestion);
+      for(i = 0; i < 4; i++)
+        document.getElementById("btn" + i).disabled = false;
+    }
+
+    /* in listener, check if button is correct answer */
+    function check() {
+      
+      if (this === correctButton) {
+        score++;
+        document.getElementById("score").innerHTML = score;
+      }
+      outOf++;
+      document.getElementById("outOf").innerHTML = outOf;
+      showAnswer();
+      
+    }
+
+    function showAnswer() {
+      correctButton.setAttribute("class", "correct");
+      for(i = 0; i < 4; i++)
+        document.getElementById("btn" + i).disabled = true;
+    }
+
+    function updateGame() {
+      replies++; // count replies
+      // we need both replies (in any order) before we can update
+      if (replies >= 2) {
+        // populate buttons with wrong answers
+        for (i = 0; i < 4; i++) {
+          var btn = document.getElementById("btn" + i);
+          btn.innerHTML = otherAnswers[i];
+          btn.setAttribute("class", ""); // unset correct or wrong
+        }
+        // choose a button for the correct answer
+        var buttonNum = Math.floor(Math.random() * 4);
+        correctButton = document.getElementById("btn" + buttonNum.toString());
+        correctButton.innerHTML = theQuestion[0];
+        document.getElementById("picture").setAttribute("src", theQuestion[1]);
+        document.getElementById("url").innerHTML = theQuestion[1];
+        replies = 0; // reset reply counter
+      }
+    }
+
+    function start() {
+      for (i = 0; i < 4; i++) {
+        // for "this" in check() to be the event element, cannot be set in html
+        document.getElementById("btn" + i).onclick = check;
+        document.getElementById("btn" + i).disabled = true;
+      }
+    }
+
+    // initialize the array for random order of questions
+    queryNumberOfQuestions();
+    window.addEventListener("load", start, "false");
+    //getQuestion.php
+  </script>
+</body>
+
+</html>
